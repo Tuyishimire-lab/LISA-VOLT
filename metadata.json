@@ -1,0 +1,6 @@
+{
+  "name": "Lisa Volt Link",
+  "description": "Premium Lighting, CCTV & Electrical shop in Kigali, featuring secure payments and user authentication.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

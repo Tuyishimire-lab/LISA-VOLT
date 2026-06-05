@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global safety net - default deny catcher
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable core primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Validation schema helper for users
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email']) 
+        && data.keys().size() <= 5
+        && data.uid is string && data.uid.size() <= 128
+        && data.email is string && data.email.size() <= 128
+        && (!data.keys().hasAll(['displayName']) || (data.displayName is string && data.displayName.size() <= 128))
+        && (!data.keys().hasAll(['role']) || (data.role is string && data.role in ['user', 'admin']));
+    }
+
+    // Validation schema helper for orders
+    function isValidOrder(data) {
+      return data.keys().hasAll(['id', 'userId', 'email', 'items', 'total', 'paymentStatus', 'status', 'shippingAddress', 'createdAt', 'updatedAt'])
+        && data.keys().size() <= 11
+        && data.id is string && data.id.size() <= 64
+        && data.userId is string && data.userId.size() <= 128
+        && data.email is string && data.email.size() <= 128
+        && data.total is number && data.total >= 0
+        && data.paymentStatus is string && data.paymentStatus in ['pending', 'paid', 'failed']
+        && data.status is string && data.status in ['received', 'processing', 'delivered', 'cancelled']
+        && data.items is list && data.items.size() > 0 && data.items.size() <= 50
+        && data.shippingAddress is map
+        && data.createdAt is string && data.createdAt.size() <= 64
+        && data.updatedAt is string && data.updatedAt.size() <= 64;
+    }
+
+    // MATCH: users/{userId}
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data)
+        && request.resource.data.uid == resource.data.uid // immutable
+        && request.resource.data.email == resource.data.email; // immutable
+      allow delete: if false; // user profiles cannot be deleted without admin intervention
+    }
+
+    // MATCH: orders/{orderId}
+    match /orders/{orderId} {
+      // Allows users to list their own orders, or retrieve single orders if they purchased them
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if (isSignedIn() && resource.data.userId == request.auth.uid) || resource.data.userId == 'guest';
+      allow create: if isValidOrder(request.resource.data)
+        && (request.resource.data.userId == 'guest' || isOwner(request.resource.data.userId));
+      
+      // Updates can only be requested by users to cancel before processing, or through backend transitions
+      allow update: if isValidOrder(request.resource.data)
+        && (
+          (isSignedIn() && resource.data.userId == request.auth.uid && request.resource.data.status == 'cancelled' 
+           && resource.data.status == 'received' // Can only cancel if order was fresh
+           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']))
+        );
+      allow delete: if false; // orders are financial legal records - never destroy
+    }
+
+  }
+}

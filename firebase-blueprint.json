@@ -1,0 +1,98 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile database representation.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique user ID from Firebase Auth."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User email address."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["user", "admin"],
+          "description": "User authority level."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when profile was created."
+        }
+      },
+      "required": ["uid", "email"]
+    },
+    "Order": {
+      "title": "Order Records",
+      "description": "Stores user transactions and Stripe payment sessions.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique order ID."
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of purchaser, or 'guest'."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Contact email for order lookup."
+        },
+        "total": {
+          "type": "number",
+          "description": "Total payment amount in RWF."
+        },
+        "paymentStatus": {
+          "type": "string",
+          "enum": ["pending", "paid", "failed"],
+          "description": "Status of Stripe transaction payment."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["received", "processing", "delivered", "cancelled"],
+          "description": "Status of the order fulfillment."
+        },
+        "items": {
+          "type": "array",
+          "description": "List of ordered products and quantities."
+        },
+        "shippingAddress": {
+          "type": "object",
+          "description": "Shipping/delivery address details in Kigali."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Time the order was placed."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Time the order was last updated."
+        }
+      },
+      "required": ["id", "email", "total", "paymentStatus", "status", "items", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Private profile information for registered users."
+    },
+    "orders/{orderId}": {
+      "schema": "Order",
+      "description": "Fulfillment and payment transactions."
+    }
+  }
+}
