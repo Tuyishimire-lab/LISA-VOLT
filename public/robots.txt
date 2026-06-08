@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin
+Disallow: /admin/
+Disallow: /account
+Disallow: /auth
+Disallow: /checkout
+Disallow: /cart
+Disallow: /wishlist
+Disallow: /quote/
+Disallow: /api/
+
+Sitemap: https://lisavoltli.lovable.app/sitemap.xml

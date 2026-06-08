@@ -1,0 +1,21 @@
+# LISA VOLT LINK
+
+> Rwanda's trusted online shop for lighting, CCTV cameras, and electrical accessories, with certified technicians for installation across Kigali and nationwide.
+
+LISA VOLT LINK is a Kigali-based retailer offering genuine, brand-name lighting, CCTV security, and electrical products with fast delivery and professional installation. Customers can shop online, request quotations and negotiate prices, book certified technicians, and pay on delivery or by Mobile Money.
+
+## Pages
+
+- [Home](/): Featured products, hot deals, and category overview.
+- [Shop Products](/products): Full catalog of lighting, CCTV cameras, and electrical accessories with category and price filters.
+- [Deals](/deals): Current discounts and Black Friday offers.
+- [Technicians](/technicians): Certified electricians, CCTV installers, and lighting specialists across Rwanda.
+- [About](/about): About LISA VOLT LINK — our mission, story, and brands.
+- [Contact](/contact): Phone, WhatsApp, email, and address.
+- [FAQ](/faq): Common questions about ordering, delivery, installation, payment, and warranty.
+- [Request a Product](/request-product): Ask us to source a product not yet in the catalog.
+- [Request a Quotation](/request-quotation): Send a cart to our team for a custom quotation and negotiation.
+
+## Optional
+
+- [Compare](/compare): Compare selected products side-by-side.
