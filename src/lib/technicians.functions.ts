@@ -401,7 +401,7 @@ export const adminUpdateTechnician = createServerFn({ method: "POST" })
           initials: row.initials || "",
           specialty: row.specialty as "Electrician" | "CCTV Installer" | "Lighting Specialist",
           years: Number(row.years) || 0,
-          areas: Array.isArray(row.areas) ? r.areas : [], // Avoid returning undefined
+          areas: Array.isArray(row.areas) ? row.areas : [], // Avoid returning undefined
           rating: Number(row.rating) || 5.0,
           ratings: Number(row.ratings) || 0,
           phone: row.phone || "",

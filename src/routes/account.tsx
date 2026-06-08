@@ -4,6 +4,7 @@ import { User, Mail, Lock, Phone, Package, Loader2, AlertCircle, CheckCircle2, L
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/account")({
+  ssr: false,
   head: () => ({ meta: [{ title: "My Account — LISA VOLT LINK" }] }),
   component: AccountPage,
 });
@@ -332,7 +333,7 @@ function AccountPage() {
                           </p>
                         </div>
                         <Link
-                          to={`/quote/${q.share_token}`}
+                          to={`/quote/${q.share_token}` as any}
                           className="inline-flex items-center gap-1.5 bg-yellow font-bold text-xs text-navy px-3.5 py-1.5 rounded hover:bg-yellow-dark transition-all"
                         >
                           Invoice &amp; Chat <ArrowRight className="h-3.5 w-3.5" />

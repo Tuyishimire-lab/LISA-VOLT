@@ -88,7 +88,7 @@ function TechniciansPage() {
     setSubmittingRating(true);
     setRateError(null);
     try {
-      await rateTechnicianPublic({ id: activeTech.id, rating: userRating });
+      await rateTechnicianPublic({ data: { id: activeTech.id, rating: userRating } });
       setRatingSuccess(true);
       setTimeout(() => {
         setRatingSuccess(false);

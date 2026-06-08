@@ -7,6 +7,7 @@ import { Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 const search = z.object({ redirect: z.string().optional() });
 
 export const Route = createFileRoute("/auth")({
+  ssr: false,
   validateSearch: search,
   head: () => ({ meta: [{ title: "Sign In — LISA VOLT LINK" }, { name: "robots", content: "noindex" }] }),
   component: AuthPage,
