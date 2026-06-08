@@ -46,6 +46,26 @@ service cloud.firestore {
         && data.updatedAt is string && data.updatedAt.size() <= 64;
     }
 
+    // Validation schema helper for technicians
+    function isValidTechnician(data) {
+      return data.keys().hasAll(['id', 'name', 'initials', 'specialty', 'phone', 'whatsapp'])
+        && data.keys().size() <= 16
+        && data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 128
+        && data.initials is string && data.initials.size() <= 10
+        && data.specialty is string && data.specialty in ['Electrician', 'CCTV Installer', 'Lighting Specialist']
+        && (!data.keys().hasAll(['years']) || data.years is number)
+        && (!data.keys().hasAll(['areas']) || data.areas is list)
+        && (!data.keys().hasAll(['rating']) || data.rating is number)
+        && (!data.keys().hasAll(['ratings']) || data.ratings is number)
+        && data.phone is string && data.phone.size() <= 64
+        && data.whatsapp is string && data.whatsapp.size() <= 64
+        && (!data.keys().hasAll(['status']) || (data.status is string && data.status in ['Available Now', 'Busy', 'Offline']))
+        && (!data.keys().hasAll(['color']) || (data.color is string && data.color.size() <= 32))
+        && (!data.keys().hasAll(['skills']) || data.skills is list)
+        && (!data.keys().hasAll(['sort_order']) || data.sort_order is number);
+    }
+
     // MATCH: users/{userId}
     match /users/{userId} {
       allow get: if isOwner(userId);
@@ -70,8 +90,16 @@ service cloud.firestore {
           (isSignedIn() && resource.data.userId == request.auth.uid && request.resource.data.status == 'cancelled' 
            && resource.data.status == 'received' // Can only cancel if order was fresh
            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']))
-        );
+         );
       allow delete: if false; // orders are financial legal records - never destroy
+    }
+
+    // MATCH: technicians/{technicianId}
+    match /technicians/{technicianId} {
+      allow read: if true;
+      allow create: if isValidTechnician(request.resource.data);
+      allow update: if isValidTechnician(request.resource.data);
+      allow delete: if true;
     }
 
   }

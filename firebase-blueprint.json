@@ -31,6 +31,72 @@
       },
       "required": ["uid", "email"]
     },
+    "Technician": {
+      "title": "Technician Profile",
+      "description": "Certified technician profile representation.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique technician ID."
+        },
+        "name": {
+          "type": "string",
+          "description": "Technician full name."
+        },
+        "initials": {
+          "type": "string",
+          "description": "Short initials."
+        },
+        "specialty": {
+          "type": "string",
+          "enum": ["Electrician", "CCTV Installer", "Lighting Specialist"],
+          "description": "Technician standard field of work."
+        },
+        "years": {
+          "type": "number",
+          "description": "Years of expertise."
+        },
+        "areas": {
+          "type": "array",
+          "description": "List of active service districts/regions."
+        },
+        "rating": {
+          "type": "number",
+          "description": "Average review rating."
+        },
+        "ratings": {
+          "type": "number",
+          "description": "Total rating count received."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number."
+        },
+        "whatsapp": {
+          "type": "string",
+          "description": "WhatsApp direct link ID."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Available Now", "Busy", "Offline"],
+          "description": "Working availability state."
+        },
+        "color": {
+          "type": "string",
+          "description": "Hex avatar background color."
+        },
+        "skills": {
+          "type": "array",
+          "description": "List of specialized technical skills."
+        },
+        "sort_order": {
+          "type": "number",
+          "description": "Display sort priority number."
+        }
+      },
+      "required": ["id", "name", "initials", "specialty", "phone", "whatsapp"]
+    },
     "Order": {
       "title": "Order Records",
       "description": "Stores user transactions and Stripe payment sessions.",
@@ -93,6 +159,10 @@
     "orders/{orderId}": {
       "schema": "Order",
       "description": "Fulfillment and payment transactions."
+    },
+    "technicians/{technicianId}": {
+      "schema": "Technician",
+      "description": "Registered technicians database profile records."
     }
   }
 }
