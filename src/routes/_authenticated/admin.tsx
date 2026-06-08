@@ -60,11 +60,25 @@ function AdminLayout() {
             <button
               onClick={() => grant.mutate()}
               disabled={grant.isPending}
-              className="btn-yellow w-full mt-4"
+              className="btn-yellow w-full mt-4 cursor-pointer"
             >
               <KeyRound className="h-4 w-4" /> {grant.isPending ? "Granting…" : "Grant me admin"}
             </button>
-            {grant.error && <p className="mt-2 text-xs text-destructive">{(grant.error as Error).message}</p>}
+            {grant.error && (
+              <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 text-red-700 text-xs rounded-lg flex flex-col gap-2 leading-relaxed">
+                <p className="font-semibold">{(grant.error as Error).message}</p>
+                {((grant.error as Error).message.includes("SUPABASE_SERVICE_ROLE_KEY") ||
+                  (grant.error as Error).message.includes("service role")) && (
+                  <div className="bg-white p-3 rounded border border-red-500/10 text-slate-700 space-y-1.5 shadow-sm mt-1">
+                    <p className="font-bold text-slate-800 text-[11px] uppercase tracking-wider text-red-600">How to Fix This in 4 Steps:</p>
+                    <p>1. Open your <strong>Supabase Dashboard</strong> (supabase.com).</p>
+                    <p>2. Select your project and navigate to <strong>Project Settings</strong> (gear icon) &rarr; <strong>API</strong>.</p>
+                    <p>3. Find the key labeled <code>service_role</code> (secret) under <strong>Project API Keys</strong> &amp; copy it.</p>
+                    <p>4. Click the <strong>Settings</strong> button at the top-right of your AI Studio editor, open the <strong>Secrets</strong> panel, and add your secret with the name <code>SUPABASE_SERVICE_ROLE_KEY</code>.</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <p className="mt-4 text-xs text-muted-foreground">Ask an existing admin to grant you access.</p>
@@ -82,11 +96,43 @@ function AdminLayout() {
       <div className="bg-navy text-white">
         <div className="container-x py-4 flex items-center gap-4 flex-wrap">
           <p className="text-yellow text-xs font-bold uppercase tracking-widest">Admin</p>
-          <nav className="flex gap-3 text-sm">
-            <Link to="/admin/quotations" className="hover:text-yellow font-semibold" activeProps={{ className: "text-yellow font-semibold" }}>Quotations</Link>
-            <a href="/admin/requests" className="hover:text-yellow">Product Requests</a>
-            <a href="/admin/momo" className="hover:text-yellow">MoMo</a>
-            <a href="/admin/technicians" className="hover:text-yellow">Technicians</a>
+          <nav className="flex gap-4 text-sm flex-wrap items-center">
+            <Link
+              to="/admin"
+              activeOptions={{ exact: true }}
+              className="text-white/80 hover:text-yellow transition-colors whitespace-nowrap"
+              activeProps={{ className: "text-yellow font-bold" }}
+            >
+              Overview
+            </Link>
+            <Link
+              to="/admin/quotations"
+              className="text-white/80 hover:text-yellow transition-colors whitespace-nowrap"
+              activeProps={{ className: "text-yellow font-bold" }}
+            >
+              Quotations
+            </Link>
+            <Link
+              to="/admin/requests"
+              className="text-white/80 hover:text-yellow transition-colors whitespace-nowrap"
+              activeProps={{ className: "text-yellow font-bold" }}
+            >
+              Product Requests
+            </Link>
+            <Link
+              to="/admin/momo"
+              className="text-white/80 hover:text-yellow transition-colors whitespace-nowrap"
+              activeProps={{ className: "text-yellow font-bold" }}
+            >
+              MoMo Logs
+            </Link>
+            <Link
+              to="/admin/technicians"
+              className="text-white/80 hover:text-yellow transition-colors whitespace-nowrap"
+              activeProps={{ className: "text-yellow font-bold" }}
+            >
+              Technicians
+            </Link>
           </nav>
           <button onClick={signOut} className="ml-auto inline-flex items-center gap-1.5 text-xs text-white/70 hover:text-yellow">
             <LogOut className="h-3.5 w-3.5" /> Sign out

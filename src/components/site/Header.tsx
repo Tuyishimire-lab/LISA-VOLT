@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { ShoppingCart, Menu, X, Heart, User, GitCompare } from "lucide-react";
-import { useState } from "react";
+import { ShoppingCart, Menu, X, Heart, User, GitCompare, ShieldCheck } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Logo } from "./Logo";
 import { AISearchBar } from "./AISearchBar";
 import { useCart, useWishlist, useCompare } from "@/lib/store";
+import { supabase } from "@/integrations/supabase/client";
 
 const NAV = [
   { label: "Home", to: "/" as const },
@@ -21,6 +22,40 @@ export function Header() {
   const wl = useWishlist();
   const cmp = useCompare();
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
+
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    async function checkRole() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        if (active) setIsAdmin(false);
+        return;
+      }
+      try {
+        const { data } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+        if (active) {
+          setIsAdmin(!!data);
+        }
+      } catch (err) {
+        console.error("Error verifying admin state:", err);
+      }
+    }
+    
+    // Initial verification
+    checkRole();
+
+    // Listen to authentication changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      checkRole();
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
     <header className="sticky top-0 z-40 bg-navy text-white shadow-lg">
@@ -53,6 +88,18 @@ export function Header() {
           <Heart className="h-5 w-5" />
           {wl.length > 0 && <span className="absolute -top-1 -right-1 h-5 w-5 grid place-items-center rounded-full bg-yellow text-navy text-[11px] font-bold">{wl.length}</span>}
         </Link>
+        
+        {isAdmin && (
+          <Link 
+            to="/admin" 
+            className="hidden sm:flex items-center gap-1.5 bg-yellow/10 hover:bg-yellow/20 text-yellow px-3 py-1.5 rounded-full border border-yellow/20 font-bold text-xs transition-all tracking-wide"
+            aria-label="Admin Dashboard"
+          >
+            <ShieldCheck className="h-3.5 w-3.5" />
+            <span>Admin</span>
+          </Link>
+        )}
+
         <Link to="/account" className="p-2 hover:text-yellow transition-colors hidden sm:block" aria-label="Account">
           <User className="h-5 w-5" />
         </Link>
@@ -91,6 +138,17 @@ export function Header() {
               <Link to="/compare" onClick={() => setOpen(false)} className="py-2 rounded bg-white/5 text-white/85">Compare ({cmp.length})</Link>
               <Link to="/account" onClick={() => setOpen(false)} className="py-2 rounded bg-white/5 text-white/85">Account</Link>
             </div>
+            
+            {isAdmin && (
+              <Link 
+                to="/admin" 
+                onClick={() => setOpen(false)} 
+                className="mt-3.5 py-3 px-4 rounded-xl text-xs font-extrabold bg-[#F2C21A]/20 hover:bg-[#F2C21A]/30 text-[#F2C21A] flex items-center justify-center gap-2 border border-[#F2C21A]/30 transition-all uppercase tracking-widest leading-none"
+              >
+                <ShieldCheck className="h-4 w-4" />
+                <span>Admin Panel</span>
+              </Link>
+            )}
           </div>
         </div>
       )}

@@ -1,7 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { collection, doc, getDocs, getDoc, addDoc, setDoc, deleteDoc } from "firebase/firestore";
-import { db, handleFirestoreError, OperationType } from "../firebase";
 
 function checkToken(token: string) {
   const expected = process.env.ADMIN_TOKEN;
@@ -172,54 +170,71 @@ const DEFAULT_TECHNICIANS = [
 ];
 
 async function seedInitialTechnicians() {
-  const collectionRef = collection(db, "technicians");
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   try {
-    for (let i = 0; i < DEFAULT_TECHNICIANS.length; i++) {
-      const tech = DEFAULT_TECHNICIANS[i];
+    const rows = DEFAULT_TECHNICIANS.map((tech, i) => {
       const docId = `tech-${i + 1}`;
-      await setDoc(doc(collectionRef, docId), {
+      return {
         id: docId,
-        ...tech,
+        name: tech.name,
+        initials: tech.initials,
+        specialty: tech.specialty,
+        years: tech.years,
+        areas: tech.areas,
+        rating: tech.rating,
+        ratings: tech.ratings,
+        phone: tech.phone,
+        whatsapp: tech.whatsapp,
+        status: tech.status,
+        color: tech.color,
+        skills: tech.skills,
+        sort_order: tech.sort_order,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      });
-    }
+      };
+    });
+    const { error } = await supabaseAdmin.from("technicians").upsert(rows);
+    if (error) throw error;
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, "technicians");
+    console.error("Error seeding technicians into Supabase:", error);
+    throw error;
   }
 }
 
 export const listTechniciansPublic = createServerFn({ method: "GET" }).handler(async () => {
   try {
-    const colRef = collection(db, "technicians");
-    let snapshot = await getDocs(colRef);
-    if (snapshot.empty) {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let { data: rows, error } = await supabaseAdmin.from("technicians").select("*");
+    if (error) throw error;
+
+    if (!rows || rows.length === 0) {
       await seedInitialTechnicians();
-      snapshot = await getDocs(colRef);
+      const res = await supabaseAdmin.from("technicians").select("*");
+      if (res.error) throw res.error;
+      rows = res.data || [];
     }
-    const rows = snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        name: data.name || "",
-        initials: data.initials || "",
-        specialty: data.specialty || "Electrician",
-        years: Number(data.years) || 0,
-        areas: Array.isArray(data.areas) ? data.areas : [],
-        rating: Number(data.rating) || 5.0,
-        ratings: Number(data.ratings) || 0,
-        phone: data.phone || "",
-        whatsapp: data.whatsapp || "",
-        status: data.status || "Available Now",
-        color: data.color || "#F5C300",
-        skills: Array.isArray(data.skills) ? data.skills : [],
-        sort_order: Number(data.sort_order) || 0,
-      };
-    });
-    rows.sort((a, b) => (a.sort_order - b.sort_order) || a.name.localeCompare(b.name));
-    return { rows };
+
+    const mapped = rows.map(r => ({
+      id: r.id,
+      name: r.name || "",
+      initials: r.initials || "",
+      specialty: r.specialty as "Electrician" | "CCTV Installer" | "Lighting Specialist",
+      years: Number(r.years) || 0,
+      areas: Array.isArray(r.areas) ? r.areas : [],
+      rating: Number(r.rating) || 5.0,
+      ratings: Number(r.ratings) || 0,
+      phone: r.phone || "",
+      whatsapp: r.whatsapp || "",
+      status: r.status as "Available Now" | "Busy" | "Offline",
+      color: r.color || "#F5C300",
+      skills: Array.isArray(r.skills) ? r.skills : [],
+      sort_order: Number(r.sort_order) || 0,
+    }));
+
+    mapped.sort((a, b) => (a.sort_order - b.sort_order) || a.name.localeCompare(b.name));
+    return { rows: mapped };
   } catch (error) {
-    handleFirestoreError(error, OperationType.GET, "technicians");
+    console.error("Error listing technicians public:", error);
     return { rows: [] };
   }
 });
@@ -231,35 +246,38 @@ export const adminListTechnicians = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     checkToken(data.token);
     try {
-      const colRef = collection(db, "technicians");
-      let snapshot = await getDocs(colRef);
-      if (snapshot.empty) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      let { data: rows, error } = await supabaseAdmin.from("technicians").select("*");
+      if (error) throw error;
+
+      if (!rows || rows.length === 0) {
         await seedInitialTechnicians();
-        snapshot = await getDocs(colRef);
+        const res = await supabaseAdmin.from("technicians").select("*");
+        if (res.error) throw res.error;
+        rows = res.data || [];
       }
-      const rows = snapshot.docs.map(doc => {
-        const d = doc.data();
-        return {
-          id: doc.id,
-          name: d.name || "",
-          initials: d.initials || "",
-          specialty: d.specialty || "Electrician",
-          years: Number(d.years) || 0,
-          areas: Array.isArray(d.areas) ? d.areas : [],
-          rating: Number(d.rating) || 5.0,
-          ratings: Number(d.ratings) || 0,
-          phone: d.phone || "",
-          whatsapp: d.whatsapp || "",
-          status: d.status || "Available Now",
-          color: d.color || "#F5C300",
-          skills: Array.isArray(d.skills) ? d.skills : [],
-          sort_order: Number(d.sort_order) || 0,
-        };
-      });
-      rows.sort((a, b) => (a.sort_order - b.sort_order) || a.name.localeCompare(b.name));
-      return { rows };
+
+      const mapped = rows.map(r => ({
+        id: r.id,
+        name: r.name || "",
+        initials: r.initials || "",
+        specialty: r.specialty as "Electrician" | "CCTV Installer" | "Lighting Specialist",
+        years: Number(r.years) || 0,
+        areas: Array.isArray(r.areas) ? r.areas : [],
+        rating: Number(r.rating) || 5.0,
+        ratings: Number(r.ratings) || 0,
+        phone: r.phone || "",
+        whatsapp: r.whatsapp || "",
+        status: r.status as "Available Now" | "Busy" | "Offline",
+        color: r.color || "#F5C300",
+        skills: Array.isArray(r.skills) ? r.skills : [],
+        sort_order: Number(r.sort_order) || 0,
+      }));
+
+      mapped.sort((a, b) => (a.sort_order - b.sort_order) || a.name.localeCompare(b.name));
+      return { rows: mapped };
     } catch (error) {
-      handleFirestoreError(error, OperationType.GET, "technicians");
+      console.error("Error admin listing technicians:", error);
       return { rows: [] };
     }
   });
@@ -293,37 +311,53 @@ export const adminCreateTechnician = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     checkToken(data.token);
     try {
-      const colRef = collection(db, "technicians");
-      const docRef = await addDoc(colRef, {
-        ...data.fields,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-      
-      await setDoc(docRef, { id: docRef.id }, { merge: true });
-      
-      const savedDoc = await getDoc(docRef);
-      const d = savedDoc.data();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: row, error } = await supabaseAdmin
+        .from("technicians")
+        .insert({
+          name: data.fields.name,
+          initials: data.fields.initials,
+          specialty: data.fields.specialty,
+          years: data.fields.years,
+          areas: data.fields.areas,
+          rating: data.fields.rating,
+          ratings: data.fields.ratings,
+          phone: data.fields.phone,
+          whatsapp: data.fields.whatsapp,
+          status: data.fields.status,
+          color: data.fields.color,
+          skills: data.fields.skills,
+          sort_order: data.fields.sort_order ?? 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (!row) throw new Error("Failed to insert technician row");
+
       return {
         row: {
-          id: docRef.id,
-          name: d?.name || "",
-          initials: d?.initials || "",
-          specialty: d?.specialty || "Electrician",
-          years: Number(d?.years) || 0,
-          areas: Array.isArray(d?.areas) ? d?.areas : [],
-          rating: Number(d?.rating) || 5.0,
-          ratings: Number(d?.ratings) || 0,
-          phone: d?.phone || "",
-          whatsapp: d?.whatsapp || "",
-          status: d?.status || "Available Now",
-          color: d?.color || "#F5C300",
-          skills: Array.isArray(d?.skills) ? d?.skills : [],
-          sort_order: Number(d?.sort_order) || 0,
+          id: row.id,
+          name: row.name || "",
+          initials: row.initials || "",
+          specialty: row.specialty as "Electrician" | "CCTV Installer" | "Lighting Specialist",
+          years: Number(row.years) || 0,
+          areas: Array.isArray(row.areas) ? row.areas : [],
+          rating: Number(row.rating) || 5.0,
+          ratings: Number(row.ratings) || 0,
+          phone: row.phone || "",
+          whatsapp: row.whatsapp || "",
+          status: row.status as "Available Now" | "Busy" | "Offline",
+          color: row.color || "#F5C300",
+          skills: Array.isArray(row.skills) ? row.skills : [],
+          sort_order: Number(row.sort_order) || 0,
         }
       };
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, "technicians");
+      console.error("Error admin creating technician:", error);
+      throw error;
     }
   });
 
@@ -332,34 +366,55 @@ export const adminUpdateTechnician = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     checkToken(data.token);
     try {
-      const docRef = doc(db, "technicians", data.id);
-      await setDoc(docRef, {
-        ...data.fields,
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const updateData: any = {
         updated_at: new Date().toISOString()
-      }, { merge: true });
-      
-      const savedDoc = await getDoc(docRef);
-      const d = savedDoc.data();
+      };
+      if (data.fields.name !== undefined) updateData.name = data.fields.name;
+      if (data.fields.initials !== undefined) updateData.initials = data.fields.initials;
+      if (data.fields.specialty !== undefined) updateData.specialty = data.fields.specialty;
+      if (data.fields.years !== undefined) updateData.years = data.fields.years;
+      if (data.fields.areas !== undefined) updateData.areas = data.fields.areas;
+      if (data.fields.rating !== undefined) updateData.rating = data.fields.rating;
+      if (data.fields.ratings !== undefined) updateData.ratings = data.fields.ratings;
+      if (data.fields.phone !== undefined) updateData.phone = data.fields.phone;
+      if (data.fields.whatsapp !== undefined) updateData.whatsapp = data.fields.whatsapp;
+      if (data.fields.status !== undefined) updateData.status = data.fields.status;
+      if (data.fields.color !== undefined) updateData.color = data.fields.color;
+      if (data.fields.skills !== undefined) updateData.skills = data.fields.skills;
+      if (data.fields.sort_order !== undefined) updateData.sort_order = data.fields.sort_order;
+
+      const { data: row, error } = await supabaseAdmin
+        .from("technicians")
+        .update(updateData)
+        .eq("id", data.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (!row) throw new Error("Technician row not found for update");
+
       return {
         row: {
-          id: docRef.id,
-          name: d?.name || "",
-          initials: d?.initials || "",
-          specialty: d?.specialty || "Electrician",
-          years: Number(d?.years) || 0,
-          areas: Array.isArray(d?.areas) ? d?.areas : [],
-          rating: Number(d?.rating) || 5.0,
-          ratings: Number(d?.ratings) || 0,
-          phone: d?.phone || "",
-          whatsapp: d?.whatsapp || "",
-          status: d?.status || "Available Now",
-          color: d?.color || "#F5C300",
-          skills: Array.isArray(d?.skills) ? d?.skills : [],
-          sort_order: Number(d?.sort_order) || 0,
+          id: row.id,
+          name: row.name || "",
+          initials: row.initials || "",
+          specialty: row.specialty as "Electrician" | "CCTV Installer" | "Lighting Specialist",
+          years: Number(row.years) || 0,
+          areas: Array.isArray(row.areas) ? r.areas : [], // Avoid returning undefined
+          rating: Number(row.rating) || 5.0,
+          ratings: Number(row.ratings) || 0,
+          phone: row.phone || "",
+          whatsapp: row.whatsapp || "",
+          status: row.status as "Available Now" | "Busy" | "Offline",
+          color: row.color || "#F5C300",
+          skills: Array.isArray(row.skills) ? row.skills : [],
+          sort_order: Number(row.sort_order) || 0,
         }
       };
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `technicians/${data.id}`);
+      console.error("Error admin updating technician:", error);
+      throw error;
     }
   });
 
@@ -368,11 +423,17 @@ export const adminDeleteTechnician = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     checkToken(data.token);
     try {
-      const docRef = doc(db, "technicians", data.id);
-      await deleteDoc(docRef);
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error } = await supabaseAdmin
+        .from("technicians")
+        .delete()
+        .eq("id", data.id);
+
+      if (error) throw error;
       return { ok: true };
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `technicians/${data.id}`);
+      console.error("Error admin deleting technician:", error);
+      throw error;
     }
   });
 
@@ -385,27 +446,37 @@ export const rateTechnicianPublic = createServerFn({ method: "POST" })
   .validator((d: unknown) => RateSchema.parse(d))
   .handler(async ({ data }) => {
     try {
-      const docRef = doc(db, "technicians", data.id);
-      const snapshot = await getDoc(docRef);
-      if (!snapshot.exists()) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: currentData, error: fetchErr } = await supabaseAdmin
+        .from("technicians")
+        .select("rating, ratings")
+        .eq("id", data.id)
+        .single();
+
+      if (fetchErr || !currentData) {
         throw new Error("Technician not found");
       }
-      const currentData = snapshot.data();
-      const currentRating = Number(currentData?.rating) || 5.0;
-      const currentRatingsCount = Number(currentData?.ratings) || 0;
+
+      const currentRating = Number(currentData.rating) || 5.0;
+      const currentRatingsCount = Number(currentData.ratings) || 0;
       
       const newRatingsCount = currentRatingsCount + 1;
       const newRating = Number(((currentRating * currentRatingsCount + data.rating) / newRatingsCount).toFixed(1));
       
-      await setDoc(docRef, {
-        rating: newRating,
-        ratings: newRatingsCount,
-        updated_at: new Date().toISOString()
-      }, { merge: true });
+      const { error: updateErr } = await supabaseAdmin
+        .from("technicians")
+        .update({
+          rating: newRating,
+          ratings: newRatingsCount,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", data.id);
+
+      if (updateErr) throw updateErr;
       
       return { ok: true, newRating, newRatingsCount };
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `technicians/${data.id}`);
+      console.error("Error rating technician public:", error);
       throw error;
     }
   });
